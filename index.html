@@ -1,0 +1,131 @@
+<html>
+<head>
+<title> Sample LinkedIn application to display network updates by various filters .. </title>
+<script type="text/javascript" src="http://platform.linkedin.com/in.js">
+  api_key:2tyw5j03zc4e 
+  authorize: true
+</script>
+ <script type="text/javascript" src="http://code.jquery.com/jquery-1.5b1.js"></script>
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.7/jquery-ui.min.js"></script>  
+  
+
+<!-- sample code from one of the samples at http://developer.linkedinlabs.com -->
+<script type="text/javascript">
+
+$(function() {
+    $( "#from" ).datepicker({
+      defaultDate: "+1w",
+      changeMonth: true,
+      numberOfMonths: 3,
+      onClose: function( selectedDate ) {
+        $( "#to" ).datepicker( "option", "minDate", selectedDate );
+      }
+    });
+    $( "#to" ).datepicker({
+      defaultDate: "+1w",
+      changeMonth: true,
+      numberOfMonths: 3,
+      onClose: function( selectedDate ) {
+        $( "#from" ).datepicker( "option", "maxDate", selectedDate );
+      }
+    });
+  });
+
+function loadData() {
+  IN.API.Profile("me")
+    .fields(["id", "firstName", "lastName", "pictureUrl","headline","publicProfileUrl"])
+    .result(function(result) {
+      profile = result.values[0];
+      profHTML = "<p><a href=\"" + profile.publicProfileUrl + "\">";
+      profHTML += "<img class=img_border align=\"left\" src=\"" + profile.pictureUrl + "\"></a>";      
+      profHTML += "<a href=\"" + profile.publicProfileUrl + "\">";
+      profHTML += "<h2 class=myname>" + profile.firstName + " " + profile.lastName + "</a> </h2>";
+      profHTML += "<span class=myheadline>" + profile.headline + "</span>";
+      $("#profile").html(profHTML);
+    });
+}
+
+function searchClick() {
+
+       var startdate = new Date(document.searchform.from.value).getTime();
+       var enddate = new Date(document.searchform.to.value).getTime();
+ // we pass field selectors as a single parameter (array of strings)
+	IN.API.NetworkUpdates()
+	.params({type:document.searchform.type.value,"count":document.searchform.count.value,"after":startdate,"before":enddate})
+	.result(function(result) {
+	    var streamHTML = "";
+		for (var update in result.values) {
+			var thisupdate = result.values[update]
+		
+			// Build each individual stream update item
+			person = thisupdate.updateContent.person
+			var thisHTML = "<div class=streamitem>";
+			
+			// Person's picture,  linked name, and status
+			thisHTML += "<div class=updateperson>" ;
+			thisHTML += "<img class=img_border align=\"left\" height=\"50\" src=\"" + person.pictureUrl + "\"></a>"; 
+			thisHTML += "<a href=\"" + person.publicProfileUrl + "\">";
+			thisHTML += "<span class=updater>" + person.firstName + " " + person.lastName + "</a></span>";	
+			//thisHTML += "<p class=update>" + person.currentShare.comment + "</p></div></div>";
+
+			// Slap this onto the HTML we're building
+			streamHTML += thisHTML;
+		}
+   document.getElementById("searchresults").innerHTML = streamHTML;
+       });
+
+}
+
+function setSearchResults(result, metadata) {
+  searchHTML = "Search Results (" + result.numResults + "):<ul>";
+  console.log(result.people.values);
+  for (i in result.people.values) {
+    searchHTML = searchHTML + "<li>";
+    searchHTML = searchHTML + result.people.values[i].firstName + " ";
+    searchHTML = searchHTML + result.people.values[i].lastName + " ";
+    searchHTML = searchHTML + " (memberToken: " + result.people.values[i].id + ")</li>";
+  }
+  searchHTML = searchHTML + "</ul>";
+  
+  document.getElementById("searchresults").innerHTML = searchHTML;
+}
+</script>
+</head>
+<body>
+<p>
+<h3> This is a sample application using <a href="http://developer.linkedin.com/apis">LinkedIn API's</a> to get network updates for a user, using various search filters. </h3>  <br> <br></p>
+<div id="profile">
+    </div>
+    <script type="IN/Login" data-onAuth="loadData"></script>
+<p>
+<br> <br> <h4> Please select the filters (enter all fields) and click Fetch </h4><br>
+<form name="searchform">
+Type of network update: 
+<select name="type">
+<option value="APPS"> Application Update</option>
+<option value="CMPY">Company follow updates </option>
+<option value="CONN">Connection updates</option>
+<option value="JOBS">Posted a job</option>
+<option value="PICT">Changed a picture</option>
+<option value="PRFU">Profile update</option>
+<option value="PRFX">Extended profile update</option>
+<option value="SHAR">Shared an item</option>
+</select> <br>
+Number of updates to show:
+<select name="count">
+<option value"10">10</option>
+<option value"50">50</option>
+<option value"100">100</option>
+<option value"250">250</option>
+</select> <br>
+<label for="from">From</label>
+<input type="text" id="from" name="from" />
+<label for="to">to</label>
+<input type="text" id="to" name="to" />
+<input type="button" value="Fetch" onclick="searchClick()"></input>
+<input type="reset" value="Reset !">
+</form>
+<br> <br>
+<div id="searchresults"></div>
+</body>
+</html>
